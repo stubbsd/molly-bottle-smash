@@ -84,9 +84,11 @@ function endAim(e,cancel){if(!aim||e.pointerId!==aim.id)return;aim.cx=e.clientX;
 cv.addEventListener('pointerup',e=>endAim(e,false));cv.addEventListener('pointercancel',e=>endAim(e,true));
 document.addEventListener('gesturestart',e=>e.preventDefault());
 function throwAt(x,y){if(balls.length>=6)return;const sx=W/2,sy=H-SA.b-40;balls.push({sx,sy,tx:x,ty:Math.min(y,H*.8),t:0,dur:.42+Math.hypot(x-sx,y-sy)/W*.08,r:Math.min(W,H)*.045,done:0});sThrow();}
-function smash(b){b.alive=0;score++;save.score=(save.score||0)+1;flash=.25;const n=22;for(let i=0;i<n;i++){const a=Math.random()*6.28,v=150+Math.random()*350;parts.push({x:b.x,y:tbox(b)[1],vx:Math.cos(a)*v,vy:Math.sin(a)*v-250,r:Math.random()*6.28,vr:(Math.random()-.5)*12,s:4+Math.random()*b.h*.12,c:b.col,life:1.2+Math.random()*.6});}
+function smash(b){b.alive=0;score++;save.score=(save.score||0)+1;flash=.25;const n=22;for(let i=0;i<n;i++){const a=Math.random()*6.28,v=150+Math.random()*350;parts.push({x:b.x,y:tbox(b)[1],vx:Math.cos(a)*v*.7,vy:Math.sin(a)*v-250,r:Math.random()*6.28,vr:(Math.random()-.5)*12,s:4+Math.random()*b.h*.12,c:Math.random()<.3?shade(b.col,.4):b.col,life:5+Math.random()*1.5,fl:4+Math.random()*(H*.18-10)*.35,shape:Math.random()<.4?'round':'shard'});}
+ // a few bigger rounded remnants shaped like the target
+ for(let i=0;i<3;i++)parts.push({x:b.x+(i-1)*b.h*.1,y:tbox(b)[1],vx:(i-1)*120+(Math.random()-.5)*80,vy:-200-Math.random()*150,r:0,vr:(Math.random()-.5)*8,s:b.h*.2,c:b.col,life:6,fl:6+Math.random()*(H*.18-10)*.35,shape:'chunk',kind:b.kind||'bottle',ci:i});
  for(let i=0;i<8;i++)parts.push({x:b.x,y:tbox(b)[1],vx:(Math.random()-.5)*300,vy:-200-Math.random()*300,r:0,vr:0,s:6,c:'#fff',life:.8,spark:1});
- sSmash(b.kind==='plate'?1.25:b.kind==='cup'?1.05:.8+Math.random()*.3);if(bottles.every(b=>!b.alive)){levelDone=T;setTimeout(()=>{if(state==='play')toPrize();},1300);sWin();burst();}}
+ sSmash(b.kind==='plate'?1.25:b.kind==='cup'?1.05:.8+Math.random()*.3);if(bottles.every(b=>!b.alive)){levelDone=T;setTimeout(()=>{if(state==="play")toPrize();},2200);sWin();burst();}}
 function burst(){for(let i=0;i<120;i++)confetti.push({x:W/2,y:H*.4,vx:(Math.random()-.5)*900,vy:-Math.random()*700-200,r:Math.random()*6,vr:(Math.random()-.5)*10,c:COLS[i%7][0],life:3});}
 function toPrize(){state='prize';const ids=PRIZES.map((_,i)=>i).sort(()=>Math.random()-.5);choices=ids.slice(0,3);}
 function pickPrize(i){const p=PRIZES[i];save.prizes[p.id]=(save.prizes[p.id]||0)+1;save.level=level+1;store();gotPrize=p;gotT=T;sPop();burst();state='got';}
@@ -99,7 +101,10 @@ function update(dt){T+=dt;flash=Math.max(0,flash-dt);
     ball.fall={vx:(Math.random()-.5)*200,vy:hit?-150:50,x:ball.tx,y:ball.ty};}}
   for(const ball of balls)if(ball.fall){ball.fall.vy+=1500*dt;ball.fall.x+=ball.fall.vx*dt;ball.fall.y+=ball.fall.vy*dt;}
   balls=balls.filter(b=>!b.fall||b.fall.y<H+50);}
- for(const p of parts){p.vy+=1200*dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.r+=p.vr*dt;p.life-=dt;}parts=parts.filter(p=>p.life>0&&p.y<H+40);
+ for(const p of parts){p.vy+=1200*dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.r+=p.vr*dt;p.life-=dt;
+  if(!p.spark){if(p.x<SA.l+6){p.x=SA.l+6;p.vx=Math.abs(p.vx)*.5;}if(p.x>W-SA.r-6){p.x=W-SA.r-6;p.vx=-Math.abs(p.vx)*.5;}
+   const fy=H*.82+p.fl;if(p.y>=fy){p.y=fy;if(Math.abs(p.vy)>90){p.vy*=-.32;p.vx*=.6;p.vr*=.5;if(!p.tk&&AC&&Math.random()<.25){p.tk=1;sNote(2200+Math.random()*1500,0,.08,.03,'sine');}}else{p.vy=0;p.vx*=Math.pow(.02,dt);p.vr*=Math.pow(.02,dt);}}}}
+ parts=parts.filter(p=>p.life>0&&p.y<H+40);if(parts.length>500)parts.splice(0,parts.length-500);
  for(const p of confetti){p.vy+=600*dt;p.vx*=.99;p.x+=p.vx*dt;p.y+=p.vy*dt;p.r+=p.vr*dt;p.life-=dt;}confetti=confetti.filter(p=>p.life>0);}
 // ---------- draw ----------
 function bigNum(n,x,y,sz,col='#fff'){ctx.font=`900 ${sz}px system-ui,-apple-system,"Arial Rounded MT Bold",sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.lineWidth=sz*.16;ctx.strokeStyle='#2b2140';ctx.lineJoin='round';ctx.strokeText(n,x,y);ctx.fillStyle=col;ctx.fillText(n,x,y);}
@@ -123,7 +128,14 @@ function drawPlay(){bg();
  for(const s of shelves){ctx.fillStyle='#8a4a22';rr(SA.l+8,s.y,W-SA.l-SA.r-16,14,6);ctx.fill();ctx.fillStyle='#b8693a';ctx.fillRect(SA.l+8,s.y,W-SA.l-SA.r-16,4);}
  for(const b of bottles)if(b.alive)drawTarget(b);
  counter();
- for(const p of parts){ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.r);ctx.globalAlpha=Math.min(1,p.life*1.5);if(p.spark){ctx.fillStyle='#fff';ctx.beginPath();star(0,0,p.s,p.s*.4,4);ctx.fill();}else{ctx.fillStyle=p.c;ctx.beginPath();ctx.moveTo(-p.s/2,-p.s/3);ctx.lineTo(p.s/2,-p.s/2);ctx.lineTo(0,p.s/2);ctx.closePath();ctx.fill();ctx.fillStyle='rgba(255,255,255,.6)';ctx.fillRect(-p.s*.2,-p.s*.3,p.s*.15,p.s*.4);}ctx.restore();}ctx.globalAlpha=1;
+ for(const p of parts){ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.r);ctx.globalAlpha=Math.min(1,p.life);if(p.spark){ctx.fillStyle='#fff';ctx.beginPath();star(0,0,p.s,p.s*.4,4);ctx.fill();}else if(p.shape==='chunk'){const z=p.s;ctx.fillStyle=p.c;ctx.strokeStyle=shade(p.c,-.35);ctx.lineWidth=2;ctx.beginPath();
+  if(p.kind==='plate'){ctx.moveTo(0,0);ctx.arc(0,0,z*.8,p.ci*2.1,p.ci*2.1+1.9);ctx.closePath();}
+  else if(p.kind==='cup'&&p.ci===2){ctx.lineWidth=z*.22;ctx.strokeStyle=shade(p.c,-.2);ctx.arc(0,0,z*.4,-1.3,1.3);ctx.stroke();ctx.beginPath();}
+  else if(p.kind==='bottle'&&p.ci===1){rr(-z*.18,-z*.5,z*.36,z,z*.15);}
+  else{rr(-z*.4,-z*.3,z*.8,z*.6,z*.25);}
+  ctx.fill();ctx.stroke();ctx.fillStyle='rgba(255,255,255,.55)';ctx.beginPath();ctx.arc(-z*.12,-z*.12,z*.1,0,7);ctx.fill();}
+ else if(p.shape==='round'){ctx.fillStyle=p.c;rr(-p.s/2,-p.s/3,p.s,p.s*.66,p.s*.3);ctx.fill();ctx.fillStyle='rgba(255,255,255,.6)';ctx.beginPath();ctx.arc(-p.s*.15,-p.s*.1,p.s*.12,0,7);ctx.fill();}
+ else{ctx.fillStyle=p.c;ctx.beginPath();ctx.moveTo(-p.s/2,-p.s/3);ctx.lineTo(p.s/2,-p.s/2);ctx.lineTo(0,p.s/2);ctx.closePath();ctx.fill();ctx.fillStyle='rgba(255,255,255,.6)';ctx.fillRect(-p.s*.2,-p.s*.3,p.s*.15,p.s*.4);}ctx.restore();}ctx.globalAlpha=1;
  for(const b of balls){let x,y,r;if(b.fall){x=b.fall.x;y=b.fall.y;r=b.r*.55;}else{const t=b.t;x=b.sx+(b.tx-b.sx)*t;y=b.sy+(b.ty-b.sy)*t-Math.sin(t*Math.PI)*H*.12;r=b.r*(1-.45*t);}drawBall(x,y,r);}
  // ready ball at hand
  if(!levelDone&&balls.length<6)drawBall(W/2,H-SA.b-40+Math.sin(T*4)*3,Math.min(W,H)*.045);
